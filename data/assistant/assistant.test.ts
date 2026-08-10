@@ -1,0 +1,42 @@
+import { describe, expect, it } from "vitest";
+import { buildDeterministicAnswer } from "./deterministic";
+import { routeAssistantIntent } from "./intent";
+import { parseAssistantRequest } from "./validation";
+import type { AssistantPlayerContext } from "./types";
+
+const mlbContext:AssistantPlayerContext={
+  identity:{officialId:123,name:"Test Hitter",team:"Test Club",position:"SS",age:24,bats:"Right",throws:"Right",role:"position-player",kind:"mlb",level:"MLB"},
+  currentSeason:{season:2026,team:"Test Club",level:"MLB",age:24,games:80,starts:null,plateAppearances:350,inningsPitched:null,avg:.280,obp:.370,slg:.490,ops:.860,era:null,whip:null,homeRuns:18,rbi:55,stolenBases:12,walks:44,strikeouts:70,saves:null,walkRate:12.6,strikeoutRate:20},
+  seasons:[
+    {season:2024,team:"Test Club",level:"MLB",age:22,games:120,starts:null,plateAppearances:480,inningsPitched:null,avg:.250,obp:.330,slg:.410,ops:.740,era:null,whip:null,homeRuns:12,rbi:48,stolenBases:8,walks:42,strikeouts:110,saves:null,walkRate:8.8,strikeoutRate:22.9},
+    {season:2025,team:"Test Club",level:"MLB",age:23,games:150,starts:null,plateAppearances:620,inningsPitched:null,avg:.275,obp:.360,slg:.480,ops:.840,era:null,whip:null,homeRuns:25,rbi:82,stolenBases:15,walks:70,strikeouts:120,saves:null,walkRate:11.3,strikeoutRate:19.4},
+    {season:2026,team:"Test Club",level:"MLB",age:24,games:80,starts:null,plateAppearances:350,inningsPitched:null,avg:.280,obp:.370,slg:.490,ops:.860,era:null,whip:null,homeRuns:18,rbi:55,stolenBases:12,walks:44,strikeouts:70,saves:null,walkRate:12.6,strikeoutRate:20},
+  ],
+  gemScore:84,gemScoreDetails:{version:"Gem Score v1",eligible:true,sampleStatus:"Full ranking eligibility",roleGroup:"hitter",categories:[{key:"performance",label:"Performance",score:88,configuredWeight:45,activeWeight:75},{key:"ageUpside",label:"Age / Upside",score:72,configuredWeight:15,activeWeight:25},{key:"defense",label:"Defense",score:null,configuredWeight:15,activeWeight:null},{key:"value",label:"Value",score:null,configuredWeight:10,activeWeight:null},{key:"recognitionGap",label:"Recognition Gap",score:null,configuredWeight:15,activeWeight:null}],positiveFactors:[{metric:"OPS",percentile:91,direction:"positive",description:"Strong OPS percentile"}],limitingFactors:[],metricsUsed:7,source:"MLB Stats API"},similarities:[{playerName:"Historical Hitter",currentSeason:2026,historicalSeason:2019,score:92,source:"MLB Stats API"}],provenance:{provider:"mlb-stats-api",quality:"live",retrievedAt:"2026-08-10T12:00:00.000Z"},freshness:"2026-08-10T12:00:00.000Z"
+};
+
+const milbContext:AssistantPlayerContext={...mlbContext,identity:{...mlbContext.identity,officialId:456,name:"Test Prospect",kind:"milb",level:"Double-A",team:"Test Org"},currentSeason:{...mlbContext.currentSeason!,level:"Double-A"},seasons:[{...mlbContext.seasons[0],season:2025,level:"High-A",ops:.720},{...mlbContext.seasons[1],season:2026,level:"Double-A",ops:.810}],gemScore:null,gemScoreDetails:null,similarities:[]};
+
+describe("Ask DiamondDNA routing and deterministic grounding",()=>{
+  it("routes MLB, MiLB, Gem Score, history, similarity, and unsupported intents",()=>{
+    expect(routeAssistantIntent("Summarize his season")).toBe("current-season");
+    expect(routeAssistantIntent("Why is his Gem Score this high?")).toBe("gem-score");
+    expect(routeAssistantIntent("What was his best season?")).toBe("career-history");
+    expect(routeAssistantIntent("Find similar historical players")).toBe("historical-similarity");
+    expect(routeAssistantIntent("How has he progressed through the minors?")).toBe("milb-development");
+    expect(routeAssistantIntent("What date did he hit for the cycle?")).toBe("unsupported-game-level");
+  });
+  it("uses only the selected player's context",()=>{const answer=buildDeterministicAnswer(mlbContext,"overview","Summarize him");expect(answer.answer).toContain("Test Hitter");expect(answer.evidence.find(x=>x.label==="OPS")?.value).toBe(".860")});
+  it("explains Gem Score with the existing calculation evidence",()=>{const answer=buildDeterministicAnswer(mlbContext,"gem-score","Why?");expect(answer.answer).toContain("84/100");expect(answer.answer).toContain("Strong OPS percentile");expect(answer.evidence.some(x=>x.label==="Defense"&&x.value==="N/A")).toBe(true)});
+  it("calculates best season and direct season differences",()=>{expect(buildDeterministicAnswer(mlbContext,"career-history","best season").answer).toContain("2026 MLB");const comparison=buildDeterministicAnswer(mlbContext,"season-comparison","How much better was 2026 than 2024?");expect(comparison.answer).toContain("0.120 better");const trend=buildDeterministicAnswer(mlbContext,"season-comparison","How has he changed over the last 3 seasons?");expect(trend.answer).toContain("latest 3 available seasons");expect(trend.evidence).toHaveLength(3)});
+  it("reports stored similarity evidence without creating a match",()=>{const answer=buildDeterministicAnswer(mlbContext,"historical-similarity","similar players");expect(answer.evidence[0].value).toBe("92%");expect(buildDeterministicAnswer({...mlbContext,similarities:[]},"historical-similarity","similar players").answer).toContain("will not invent matches")});
+  it("summarizes verified MiLB levels and avoids unsupported age rankings",()=>{expect(buildDeterministicAnswer(milbContext,"milb-development","progress").answer).toContain("High-A, Double-A");expect(buildDeterministicAnswer(milbContext,"milb-development","Which level has been his best?").answer).toContain("Double-A");expect(buildDeterministicAnswer(milbContext,"age-level","age for level").answer).toContain("cannot accurately label")});
+  it("never fabricates game-level or Statcast answers",()=>{expect(buildDeterministicAnswer(mlbContext,"unsupported-game-level","best game").answer).toContain("doesn't currently have game-log");expect(buildDeterministicAnswer(mlbContext,"unsupported-statcast","exit velocity").answer).toContain("doesn't currently have verified Statcast")});
+  it("uses the previous intent for a short follow-up",()=>{expect(routeAssistantIntent("How much better was it?",[{role:"assistant",content:"2026 was best",intent:"career-history"}])).toBe("season-comparison")});
+});
+
+describe("assistant request validation",()=>{
+  it("accepts a valid scoped request and trims history",()=>{const result=parseAssistantRequest({playerId:123,playerKind:"mlb",question:" Summary? ",history:Array.from({length:12},()=>({role:"user",content:"x"}))});expect(result.question).toBe("Summary?");expect(result.history).toHaveLength(8)});
+  it("rejects malformed requests and excessive input",()=>{expect(()=>parseAssistantRequest({playerId:"123",playerKind:"mlb",question:"hi"})).toThrow("valid official player ID");expect(()=>parseAssistantRequest({playerId:123,playerKind:"mlb",question:"x".repeat(501)})).toThrow("limited to 500")});
+  it("keeps player switches explicit through ID and kind",()=>{expect(parseAssistantRequest({playerId:456,playerKind:"milb",question:"summary"})).toMatchObject({playerId:456,playerKind:"milb"})});
+});
