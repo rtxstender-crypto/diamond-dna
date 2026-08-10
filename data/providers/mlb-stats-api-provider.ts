@@ -98,7 +98,7 @@ export function parseMlbStatsPayload(payload: unknown, role: "position-player" |
     const currentSeason: PositionPlayerStats | PitcherStats = role === "position-player" ? {
       kind: "batting", context: { scope: "season", season }, games: numberAt(stat, "gamesPlayed"), plateAppearances: numberAt(stat, "plateAppearances"), battingAverage: numberAt(stat, "avg"), onBasePercentage: numberAt(stat, "obp"), sluggingPercentage: numberAt(stat, "slg"), ops: numberAt(stat, "ops"), opsPlus: null, homeRuns: numberAt(stat, "homeRuns"), rbi: numberAt(stat, "rbi"), stolenBases: numberAt(stat, "stolenBases"), walks: numberAt(stat, "baseOnBalls"), strikeouts: numberAt(stat, "strikeOuts"), walkRate: null, strikeoutRate: null, war: null, provenance,
     } : {
-      kind: "pitching", context: { scope: "season", season }, games: numberAt(stat, "gamesPlayed") ?? numberAt(stat, "gamesPitched"), gamesStarted: numberAt(stat, "gamesStarted"), inningsPitched: numberAt(stat, "inningsPitched"), era: numberAt(stat, "era"), eraPlus: null, fip: null, whip: numberAt(stat, "whip"), strikeouts: numberAt(stat, "strikeOuts"), walks: numberAt(stat, "baseOnBalls"), strikeoutRate: null, walkRate: null, war: null, saves: numberAt(stat, "saves"), provenance,
+      kind: "pitching", context: { scope: "season", season }, games: numberAt(stat, "gamesPlayed") ?? numberAt(stat, "gamesPitched"), gamesStarted: numberAt(stat, "gamesStarted"), inningsPitched: numberAt(stat, "inningsPitched"), era: numberAt(stat, "era"), eraPlus: null, fip: null, whip: numberAt(stat, "whip"), strikeouts: numberAt(stat, "strikeOuts"), walks: numberAt(stat, "baseOnBalls"), battersFaced: numberAt(stat, "battersFaced"), strikeoutRate: null, walkRate: null, war: null, saves: numberAt(stat, "saves"), provenance,
     };
 
     return [{
@@ -110,6 +110,7 @@ export function parseMlbStatsPayload(payload: unknown, role: "position-player" |
       salary: null,
       salaryProvenance: unavailableProvenance,
       gemScore: null,
+      gemScoreDetails: null,
       trend: null,
       accent: accents[index % accents.length],
       provenance,
@@ -140,19 +141,19 @@ export class MlbStatsApiProvider implements PlayerDataProvider {
 
   async listPlayers(query: PlayerQuery = {}): Promise<PlayerRecord[]> {
     const season = query.season ?? this.season;
-    const common = `stats=season&season=${season}&sportIds=1&playerPool=QUALIFIED&hydrate=person,team&limit=12`;
+    const common = `stats=season&season=${season}&sportIds=1&playerPool=ALL&hydrate=person,team&limit=2000`;
     const [hittingPayload, pitchingPayload] = await Promise.all([
       this.fetchJson(`/stats?${common}&group=hitting&sortStat=onBasePlusSlugging`),
       this.fetchJson(`/stats?${common}&group=pitching&sortStat=earnedRunAverage`),
     ]);
-    const playerIds = Array.from(new Set(playerIdsFrom(hittingPayload).concat(playerIdsFrom(pitchingPayload))));
+    const playerIds = Array.from(new Set(playerIdsFrom(hittingPayload).concat(playerIdsFrom(pitchingPayload))).values()).slice(0, 300);
     const hydrate = `stats(group=[fielding],type=[season],season=${season})`;
     const fieldingPayload = playerIds.length ? await this.fetchJson(`/people?personIds=${playerIds.join(",")}&hydrate=${hydrate}`) : null;
     const retrievedAt = new Date().toISOString();
     const fielding = parseMlbFieldingPayload(fieldingPayload, retrievedAt);
     const hitters = parseMlbStatsPayload(hittingPayload, "position-player", season, fielding, retrievedAt);
     const pitchers = parseMlbStatsPayload(pitchingPayload, "pitcher", season, fielding, retrievedAt);
-    let players = query.role === "position-player" ? hitters : query.role === "pitcher" ? pitchers : hitters.slice(0, 6).concat(pitchers.slice(0, 6));
+    let players = query.role === "position-player" ? hitters : query.role === "pitcher" ? pitchers : hitters.concat(pitchers);
     if (query.search) players = players.filter(player => player.identity.name.toLowerCase().includes(query.search!.toLowerCase()));
     players = players.slice(0, query.limit ?? players.length);
     if (!players.length) throw new Error("MLB Stats API returned no valid player records");

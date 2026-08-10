@@ -2,6 +2,7 @@ import type { PlayerDataProvider } from "@/data/providers/player-data-provider";
 import type { PlayerQuery } from "@/data/providers/player-data-provider";
 import { MlbStatsApiProvider } from "@/data/providers/mlb-stats-api-provider";
 import { MockPlayerProvider } from "@/data/providers/mock-player-provider";
+import { rankGemScores } from "@/data/gem-score";
 
 const liveProvider: PlayerDataProvider = new MlbStatsApiProvider();
 const fallbackProvider: PlayerDataProvider = new MockPlayerProvider();
@@ -20,6 +21,7 @@ export async function loadPlayersWithFallback(primary: PlayerDataProvider, fallb
 }
 
 export async function getHiddenGemPlayers() {
-  const players = await loadPlayersWithFallback(liveProvider, fallbackProvider, { limit: 12 });
-  return players.sort((a, b) => (b.gemScore ?? -1) - (a.gemScore ?? -1));
+  const players = await loadPlayersWithFallback(liveProvider, fallbackProvider);
+  if (!players.every(player => player.provenance.quality === "live")) return players.map(player=>({...player,gemScore:null,gemScoreDetails:null}));
+  return rankGemScores(players).slice(0,30);
 }

@@ -10,7 +10,7 @@ function batting(season: number, war: number, opsPlus: number): PositionPlayerSt
 }
 
 function pitching(season: number, war: number, eraPlus: number): PitcherStats {
-  return { kind: "pitching", context: { scope: "season", season }, games: null, gamesStarted: null, inningsPitched: null, era: null, eraPlus, fip: null, whip: null, strikeouts: null, walks: null, strikeoutRate: null, walkRate: null, war, saves: null, provenance: mockProvenance };
+  return { kind: "pitching", context: { scope: "season", season }, games: null, gamesStarted: null, inningsPitched: null, era: null, eraPlus, fip: null, whip: null, strikeouts: null, walks: null, battersFaced: null, strikeoutRate: null, walkRate: null, war, saves: null, provenance: mockProvenance };
 }
 
 const seed = [
@@ -30,7 +30,8 @@ const players: PlayerRecord[] = seed.map(player => ({
   recognition: emptyRecognition,
   salary: null,
   salaryProvenance: mockProvenance,
-  gemScore: player.gemScore,
+  gemScore: null,
+  gemScoreDetails: null,
   trend: player.trend,
   accent: player.accent,
   provenance: mockProvenance,

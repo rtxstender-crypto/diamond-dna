@@ -98,6 +98,7 @@ export interface PitcherStats {
   whip: number | null;
   strikeouts: number | null;
   walks: number | null;
+  battersFaced: number | null;
   strikeoutRate: number | null;
   walkRate: number | null;
   war: number | null;
@@ -113,11 +114,26 @@ export interface PlayerRecord {
   recognition: RecognitionStats;
   salary: number | null;
   salaryProvenance: DataProvenance;
-  /** Placeholder only. This is deliberately not the final DiamondDNA model. */
   gemScore: number | null;
+  gemScoreDetails: GemScoreDetails | null;
   trend: string | null;
   accent: string;
   provenance: DataProvenance;
+}
+
+export type GemCategoryKey = "performance" | "ageUpside" | "defense" | "value" | "recognitionGap";
+export interface GemCategoryScore { key: GemCategoryKey; label: string; score: number | null; configuredWeight: number; activeWeight: number | null }
+export interface GemMetricEvidence { metric: string; percentile: number; direction: "positive" | "negative"; description: string }
+export interface GemScoreDetails {
+  version: "Gem Score v1";
+  eligible: boolean;
+  sampleStatus: string;
+  roleGroup: "hitter" | "starter" | "reliever";
+  categories: GemCategoryScore[];
+  positiveFactors: GemMetricEvidence[];
+  limitingFactors: GemMetricEvidence[];
+  metricsUsed: number;
+  source: "MLB Stats API";
 }
 
 export function formatStat(value: number | null, options?: { decimals?: number; percent?: boolean; currency?: boolean }): string {
