@@ -1,25 +1,8 @@
-import type { TrajectoryPlayer } from "@/data/trajectory";
-
-type Series = { name: string; color: string; series: { age: number; war: number }[] };
-type SelectedPoint = { name: string; age: number; season: number };
-
-export function TrajectoryChart({ player, comparisons, selectedPoints = [] }: { player: TrajectoryPlayer; comparisons: Series[]; selectedPoints?: SelectedPoint[] }) {
-  const all = [{ name: player.name, color: "#d3ff62", series: player.series }, ...comparisons];
-  const maxWar = Math.max(...all.flatMap(x => x.series.map(p => p.war)), 20);
-  const minAge = Math.min(...all.flatMap(x => x.series.map(p => p.age)));
-  const maxAge = Math.max(...all.flatMap(x => x.series.map(p => p.age)));
-  const xy = (age: number, war: number) => ({ x: ((age-minAge)/(maxAge-minAge))*100, y: 100-(war/maxWar)*100 });
-  return <div className="chart-card">
-    <div className="chart-head"><div><span>MOCK CAREER WAR BY AGE</span><h3>Trajectory comparison</h3></div><div className="legend">{all.map(s => <span key={s.name}><i style={{background:s.color}}/>{s.name}</span>)}</div></div>
-    <div className="chart-area" role="img" aria-label={`Career WAR by age comparison for ${player.name}`}>
-      <div className="y-labels">{[maxWar, maxWar*.75, maxWar*.5, maxWar*.25, 0].map(n => <span key={n}>{Math.round(n)}</span>)}</div>
-      <div className="plot">
-        {[0,1,2,3,4].map(n => <i className="gridline" style={{top:`${n*25}%`}} key={n}/>)}
-        {all.map(s => s.series.slice(0,-1).map((p,i) => { const a=xy(p.age,p.war), b=xy(s.series[i+1].age,s.series[i+1].war); const dx=b.x-a.x, dy=b.y-a.y; return <i className="chart-line" key={`${s.name}-${i}`} style={{ left:`${a.x}%`, top:`${a.y}%`, width:`${Math.hypot(dx,dy)}%`, transform:`rotate(${Math.atan2(dy,dx)}rad)`, background:s.color }}/>}))}
-        {all.map(s => s.series.map(p => { const q=xy(p.age,p.war); const selected=selectedPoints.find(point=>point.name===s.name&&point.age===p.age); return <span className={`chart-dot ${selected?"selected":""}`} key={`${s.name}-${p.age}`} style={{left:`${q.x}%`,top:`${q.y}%`,borderColor:s.color}}>{selected&&<b>{selected.season} · AGE {p.age}</b>}</span>}))}
-      </div>
-      <div className="x-labels">{Array.from({length:maxAge-minAge+1},(_,i)=>minAge+i).map(a=><span key={a}>{a}</span>)}</div>
-    </div>
-    <div className="chart-axis">AGE</div>
-  </div>;
+import type { CareerSeries } from "@/data/trajectory-comparison";
+type Point={name:string;age:number;season:number};
+export function TrajectoryChart({current,comparisons,selectedPoints=[]}:{current:CareerSeries;comparisons:CareerSeries[];selectedPoints?:Point[]}){
+ const all=[current,...comparisons].filter(s=>s.series.length);if(!all.length)return <div className="chart-card trajectory-empty wide">Career context is unavailable from MLB for these matches.</div>;
+ const values=all.flatMap(s=>s.series.map(p=>p.value)),ages=all.flatMap(s=>s.series.map(p=>p.age));const min=Math.min(...values),max=Math.max(...values),minAge=Math.min(...ages),maxAge=Math.max(...ages),span=Math.max(max-min,.01),ageSpan=Math.max(maxAge-minAge,1);
+ const xy=(age:number,value:number)=>({x:(age-minAge)/ageSpan*100,y:100-(value-min)/span*100});
+ return <div className="chart-card"><div className="chart-head"><div><span>MLB CAREER {current.metricLabel} BY AGE</span><h3>Trajectory context</h3></div><div className="legend">{all.map(s=><span key={s.playerId}><i style={{background:s.color}}/>{s.name}</span>)}</div></div><div className="chart-area" role="img" aria-label={`MLB career ${current.metricLabel} by age comparison`}><div className="y-labels">{[max,max-span*.25,max-span*.5,max-span*.75,min].map((n,i)=><span key={i}>{n.toFixed(3)}</span>)}</div><div className="plot">{[0,1,2,3,4].map(n=><i className="gridline" style={{top:`${n*25}%`}} key={n}/>)}<svg className="chart-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{all.map(s=><polyline key={s.playerId} points={s.series.map(p=>{const q=xy(p.age,p.value);return `${q.x},${q.y}`}).join(" ")} fill="none" stroke={s.color} vectorEffect="non-scaling-stroke"/>)}</svg>{all.flatMap(s=>s.series.map(p=>{const q=xy(p.age,p.value),selected=selectedPoints.find(x=>x.name===s.name&&x.season===p.season);return <span className={`chart-dot ${selected?"selected":""}`} key={`${s.playerId}-${p.season}`} style={{left:`${q.x}%`,top:`${q.y}%`,borderColor:s.color}}>{selected&&<b>{p.season} · AGE {p.age}</b>}</span>}))}</div><div className="x-labels">{Array.from({length:maxAge-minAge+1},(_,i)=>minAge+i).map(a=><span key={a}>{a}</span>)}</div></div><div className="chart-axis">AGE · {current.metricLabel}{current.lowerIsBetter?" (LOWER IS BETTER)":""}</div></div>
 }
