@@ -9,7 +9,7 @@ export interface PlayerSeason {
   playerId:string; playerName:string; team:string|null; position:string; role:TrajectoryRole; pitchingRole:PitchingRole;
   season:number; age:number|null; games:number|null; starts:number|null; plateAppearances:number|null; inningsPitched:number|null;
   avg:number|null; obp:number|null; slg:number|null; ops:number|null; opsPlus:number|null; homeRuns:number|null; rbi:number|null;
-  stolenBases:number|null; walkRate:number|null; strikeoutRate:number|null; era:number|null; eraPlus:number|null; fip:number|null;
+  stolenBases:number|null; walks:number|null; walkRate:number|null; strikeoutRate:number|null; era:number|null; eraPlus:number|null; fip:number|null;
   whip:number|null; strikeouts:number|null; saves:number|null; war:number|null; defensiveValue:number|null;
   provenance:StatProvenance;
 }

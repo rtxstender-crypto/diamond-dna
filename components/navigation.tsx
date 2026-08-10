@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const links = [{ href: "/", label: "Home" }, { href: "/hidden-gems", label: "Hidden Gems" }, { href: "/career-trajectory", label: "Career Trajectory" }, { href: "/methodology", label: "Methodology" }];
+const links = [{ href: "/", label: "Home" }, { href: "/players", label: "Players" }, { href: "/prospects", label: "Prospects" }, { href: "/hidden-gems", label: "Hidden Gems" }, { href: "/career-trajectory", label: "Career Trajectory" }, { href: "/methodology", label: "Methodology" }];
 
 export function Navigation() {
   const path = usePathname();
