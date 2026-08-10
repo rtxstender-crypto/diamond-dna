@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tailwindcss/postcss": "latest",
@@ -22,6 +23,7 @@
     "@types/react-dom": "latest",
     "eslint": "^9.39.4",
     "eslint-config-next": "latest",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^3.2.4"
   }
 }
