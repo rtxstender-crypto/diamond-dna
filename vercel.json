@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/refresh/mlb-current",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/refresh/milb",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/refresh/mlb-identity",
+      "schedule": "0 7 * * *"
+    }
+  ]
+}

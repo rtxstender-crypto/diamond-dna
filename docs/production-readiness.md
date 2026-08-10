@@ -54,7 +54,7 @@ WAR, OPS+, ERA+, FIP, OAA, DRS, salary, and awards remain unavailable/inactive a
 | Historical comparison pool | 24 hours | Next trajectory request after expiry |
 | Completed-history configuration | 7 days | Available policy; historical provider currently uses 24 hours |
 
-This is **not real-time data** and there is no background scheduler. Revalidation is traffic/build driven. The MiLB aggregated stale fallback is process-memory only and will not persist across serverless cold starts. A scheduled warming/refresh job plus durable cache is recommended if daily refresh is a product requirement.
+This is **not real-time data**. Normal revalidation remains traffic/build driven. A Vercel Hobby-compatible scheduler now warms current MLB statistics, combined MiLB identity/statistics, and MLB identity once daily through the existing providers. On Vercel, the underlying `fetch` responses use the shared Data Cache, so the jobs improve freshness even without visitor traffic. Hobby cannot run the jobs every two or six hours; normal traffic still applies those shorter TTLs. The MiLB aggregated stale fallback is process-memory only and will not persist across serverless cold starts.
 
 ## Security and resilience
 
@@ -110,6 +110,6 @@ The prospects directory was the primary bottleneck. Compact tuple projection and
 2. Keep any optional AI provider key server-only; never prefix it with `NEXT_PUBLIC_`.
 3. Run `pnpm install --frozen-lockfile`, `pnpm test`, and `pnpm build` in CI.
 4. Perform the manual responsive/browser matrix noted above.
-5. Add uptime/error monitoring and a scheduled data refresh/warm-up job.
+5. Add uptime/error monitoring and verify the registered cron jobs in Vercel after deployment.
 6. Add shared rate limiting before enabling an external AI provider at public scale.
 7. Re-run the production data audit after deployment and on MLB/MiLB season-boundary changes.
