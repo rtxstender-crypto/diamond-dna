@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Barlow_Condensed, Inter } from "next/font/google";
 import { Navigation } from "@/components/navigation";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <p>Built for the next generation of baseball decisions.</p>
           <span>© 2026 DiamondDNA</span>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
