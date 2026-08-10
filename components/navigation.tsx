@@ -12,8 +12,8 @@ export function Navigation() {
   const [open, setOpen] = useState(false);
   return <header className="nav-shell"><nav className="nav-wrap" aria-label="Main navigation">
     <Link href="/" className="brand" onClick={() => setOpen(false)}><span className="brand-mark">D</span><span>Diamond<span>DNA</span></span></Link>
-    <button className="menu-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="Toggle navigation">{open ? <X/> : <Menu/>}</button>
-    <div className={`nav-links ${open ? "open" : ""}`}>{links.map(link => <Link key={link.href} href={link.href} className={path === link.href ? "active" : ""} onClick={() => setOpen(false)}>{link.label}</Link>)}</div>
+    <button className="menu-button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="main-navigation-links" aria-label="Toggle navigation">{open ? <X/> : <Menu/>}</button>
+    <div id="main-navigation-links" className={`nav-links ${open ? "open" : ""}`}>{links.map(link => <Link key={link.href} href={link.href} className={path === link.href ? "active" : ""} onClick={() => setOpen(false)}>{link.label}</Link>)}</div>
     <Link href="/hidden-gems" className="nav-cta">View Rankings <span>↗</span></Link>
   </nav></header>;
 }

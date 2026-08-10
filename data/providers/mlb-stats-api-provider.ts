@@ -1,5 +1,6 @@
 import type { DataProvenance, DefensiveStats, PitcherStats, PlayerRecord, PositionPlayerStats } from "@/data/models/player";
 import type { PlayerDataProvider, PlayerQuery } from "./player-data-provider";
+import { DATA_CACHE_SECONDS } from "../cache-config";
 
 type JsonObject = Record<string, unknown>;
 type CachedRequestInit = RequestInit & { next?: { revalidate: number } };
@@ -11,6 +12,10 @@ export interface MlbProviderOptions {
 }
 
 const accents = ["#f2c14e", "#58a6ff", "#5aa7e8", "#47c5a5", "#18b7d2", "#9bcf61"];
+const sharedFields="stats,splits,season,player,id,fullName,nameSlug,currentAge,primaryPosition,type,abbreviation,team,id,name,abbreviation,position,abbreviation,stat";
+const hittingFields=`${sharedFields},gamesPlayed,plateAppearances,avg,obp,slg,ops,homeRuns,rbi,stolenBases,baseOnBalls,strikeOuts,age`;
+const pitchingFields=`${sharedFields},gamesPlayed,gamesPitched,gamesStarted,inningsPitched,era,whip,strikeOuts,baseOnBalls,battersFaced,saves,age`;
+const fieldingFields="people,id,stats,splits,position,abbreviation,stat,games,gamesPlayed,innings,errors,fielding";
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -129,7 +134,7 @@ export class MlbStatsApiProvider implements PlayerDataProvider {
   constructor(options: MlbProviderOptions = {}) {
     this.fetcher = options.fetcher ?? fetch;
     this.season = options.season ?? new Date().getFullYear();
-    this.revalidateSeconds = options.revalidateSeconds ?? 3600;
+    this.revalidateSeconds = options.revalidateSeconds ?? DATA_CACHE_SECONDS.currentSeasonStats;
   }
 
   private async fetchJson(path: string): Promise<unknown> {
@@ -143,12 +148,12 @@ export class MlbStatsApiProvider implements PlayerDataProvider {
     const season = query.season ?? this.season;
     const common = `stats=season&season=${season}&sportIds=1&playerPool=ALL&hydrate=person,team&limit=2000`;
     const [hittingPayload, pitchingPayload] = await Promise.all([
-      this.fetchJson(`/stats?${common}&group=hitting&sortStat=onBasePlusSlugging`),
-      this.fetchJson(`/stats?${common}&group=pitching&sortStat=earnedRunAverage`),
+      this.fetchJson(`/stats?${common}&group=hitting&sortStat=onBasePlusSlugging&fields=${hittingFields}`),
+      this.fetchJson(`/stats?${common}&group=pitching&sortStat=earnedRunAverage&fields=${pitchingFields}`),
     ]);
     const playerIds = Array.from(new Set(playerIdsFrom(hittingPayload).concat(playerIdsFrom(pitchingPayload))).values()).slice(0, 300);
     const hydrate = `stats(group=[fielding],type=[season],season=${season})`;
-    const fieldingPayload = playerIds.length ? await this.fetchJson(`/people?personIds=${playerIds.join(",")}&hydrate=${hydrate}`) : null;
+    const fieldingPayload = playerIds.length ? await this.fetchJson(`/people?personIds=${playerIds.join(",")}&hydrate=${hydrate}&fields=${fieldingFields}`) : null;
     const retrievedAt = new Date().toISOString();
     const fielding = parseMlbFieldingPayload(fieldingPayload, retrievedAt);
     const hitters = parseMlbStatsPayload(hittingPayload, "position-player", season, fielding, retrievedAt);

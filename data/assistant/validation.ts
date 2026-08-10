@@ -2,8 +2,17 @@ import type { AssistantHistoryItem, AssistantPlayerKind, AssistantRequest } from
 
 export const MAX_QUESTION_LENGTH=500;
 export const MAX_HISTORY_ITEMS=8;
+export const MAX_REQUEST_BYTES=20_000;
 
 export class AssistantRequestError extends Error { constructor(message:string,public status=400){super(message)} }
+
+export async function readAssistantJson(request:Request):Promise<unknown>{
+  if(!request.headers.get("content-type")?.toLowerCase().startsWith("application/json"))throw new AssistantRequestError("Content-Type must be application/json.",415);
+  if(!request.body)throw new AssistantRequestError("Malformed request.");
+  const reader=request.body.getReader(),decoder=new TextDecoder();let bytes=0,text="";
+  while(true){const{done,value}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>MAX_REQUEST_BYTES){await reader.cancel();throw new AssistantRequestError("Request is too large.",413)}text+=decoder.decode(value,{stream:true})}
+  text+=decoder.decode();try{return JSON.parse(text)}catch{throw new AssistantRequestError("Malformed JSON request.")}
+}
 
 export function parseAssistantRequest(value:unknown):AssistantRequest{
   if(typeof value!=="object"||value===null||Array.isArray(value))throw new AssistantRequestError("Malformed request.");

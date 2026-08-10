@@ -9,44 +9,44 @@ importers:
   .:
     dependencies:
       '@tailwindcss/postcss':
-        specifier: latest
+        specifier: 4.3.3
         version: 4.3.3
       lucide-react:
-        specifier: latest
+        specifier: 1.30.0
         version: 1.30.0(react@19.2.8)
       next:
-        specifier: latest
+        specifier: 16.3.0
         version: 16.3.0(@babel/core@7.29.7(supports-color@7.2.0))(@types/node@26.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
-        specifier: latest
+        specifier: 19.2.8
         version: 19.2.8
       react-dom:
-        specifier: latest
+        specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
       tailwindcss:
-        specifier: latest
+        specifier: 4.3.3
         version: 4.3.3
     devDependencies:
       '@types/node':
-        specifier: latest
+        specifier: 26.2.0
         version: 26.2.0
       '@types/react':
-        specifier: latest
+        specifier: 19.2.18
         version: 19.2.18
       '@types/react-dom':
-        specifier: latest
+        specifier: 19.2.4
         version: 19.2.4(@types/react@19.2.18)
       eslint:
-        specifier: ^9.39.4
+        specifier: 9.39.5
         version: 9.39.5(jiti@2.7.0)(supports-color@7.2.0)
       eslint-config-next:
-        specifier: latest
+        specifier: 16.3.0
         version: 16.3.0(@typescript-eslint/parser@8.66.0(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3))(eslint@9.39.5(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
       typescript:
-        specifier: ^6.0.2
+        specifier: 6.0.3
         version: 6.0.3
       vitest:
-        specifier: ^3.2.4
+        specifier: 3.2.7
         version: 3.2.7(@types/node@26.2.0)(jiti@2.7.0)(lightningcss@1.32.0)(supports-color@7.2.0)
 
 packages:

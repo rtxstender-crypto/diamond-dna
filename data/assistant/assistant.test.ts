@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildDeterministicAnswer } from "./deterministic";
 import { routeAssistantIntent } from "./intent";
-import { parseAssistantRequest } from "./validation";
+import { parseAssistantRequest, readAssistantJson } from "./validation";
 import type { AssistantPlayerContext } from "./types";
 
 const mlbContext:AssistantPlayerContext={
@@ -39,4 +39,5 @@ describe("assistant request validation",()=>{
   it("accepts a valid scoped request and trims history",()=>{const result=parseAssistantRequest({playerId:123,playerKind:"mlb",question:" Summary? ",history:Array.from({length:12},()=>({role:"user",content:"x"}))});expect(result.question).toBe("Summary?");expect(result.history).toHaveLength(8)});
   it("rejects malformed requests and excessive input",()=>{expect(()=>parseAssistantRequest({playerId:"123",playerKind:"mlb",question:"hi"})).toThrow("valid official player ID");expect(()=>parseAssistantRequest({playerId:123,playerKind:"mlb",question:"x".repeat(501)})).toThrow("limited to 500")});
   it("keeps player switches explicit through ID and kind",()=>{expect(parseAssistantRequest({playerId:456,playerKind:"milb",question:"summary"})).toMatchObject({playerId:456,playerKind:"milb"})});
+  it("enforces the streamed body and content-type limits",async()=>{const valid=new Request("http://local/api/assistant",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({playerId:123,playerKind:"mlb",question:"summary"})});expect(await readAssistantJson(valid)).toMatchObject({playerId:123});const oversized=new Request("http://local/api/assistant",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({padding:"x".repeat(20_001)})});await expect(readAssistantJson(oversized)).rejects.toMatchObject({status:413});const wrongType=new Request("http://local/api/assistant",{method:"POST",body:"{}"});await expect(readAssistantJson(wrongType)).rejects.toMatchObject({status:415})});
 });
