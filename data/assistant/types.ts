@@ -6,6 +6,7 @@ export type AssistantIntent =
   | "overview"
   | "current-season"
   | "career-history"
+  | "career-stat"
   | "season-comparison"
   | "strengths"
   | "weaknesses"
@@ -53,6 +54,18 @@ export interface AssistantSeason {
   saves: number | null;
   walkRate: number | null;
   strikeoutRate: number | null;
+  atBats?: number | null;
+  hits?: number | null;
+  runs?: number | null;
+  doubles?: number | null;
+  triples?: number | null;
+  hitByPitch?: number | null;
+  sacrificeFlies?: number | null;
+  wins?: number | null;
+  losses?: number | null;
+  earnedRuns?: number | null;
+  hitsAllowed?: number | null;
+  homeRunsAllowed?: number | null;
 }
 
 export interface AssistantSimilarity {

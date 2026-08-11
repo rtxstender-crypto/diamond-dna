@@ -1,5 +1,6 @@
 import type { AssistantAnswer, AssistantEvidence, AssistantHistoryItem, AssistantIntent, AssistantPlayerContext, AssistantSeason } from "./types";
 import { answerGameHistory } from "./game-history-answer";
+import { answerCareerStat } from "./career-stat";
 
 const n=(value:number|null,decimals=0)=>value===null?"N/A":value.toFixed(decimals).replace(decimals===3?/^0/:/$^/,"");
 const evidence=(label:string,value:number|null,decimals=0,note?:string):AssistantEvidence=>({label,value:n(value,decimals),note});
@@ -19,6 +20,7 @@ function yearPair(question:string,context:AssistantPlayerContext):AssistantSeaso
 export function buildDeterministicAnswer(context:AssistantPlayerContext,intent:AssistantIntent,question:string,history:AssistantHistoryItem[]=[]):AssistantAnswer{
   const player=context.identity.name,current=context.currentSeason,providerAvailable=Boolean(process.env.DIAMONDDNA_ASSISTANT_API_KEY&&process.env.DIAMONDDNA_ASSISTANT_MODEL);let answer="",items:AssistantEvidence[]=[];
   switch(intent){
+    case"career-stat":return answerCareerStat(context,question);
     case"game-history":return answerGameHistory(context,question);
     case"unsupported-statcast":answer=`DiamondDNA doesn't currently have verified Statcast or pitch-level data for this question about ${player}. Those values will remain unavailable until that source is integrated.`;break;
     case"gem-score":if(context.identity.kind==="milb")answer="Prospect Gem Score is not implemented yet, so DiamondDNA cannot provide or explain one for this player.";else if(context.gemScore===null||!context.gemScoreDetails)answer=`${player} does not currently have an eligible Gem Score. DiamondDNA will not substitute a made-up score.`;else{const details=context.gemScoreDetails,positive=details.positiveFactors.map(f=>f.description),limits=details.limitingFactors.map(f=>f.description);answer=`${player}'s ${context.gemScore}/100 Gem Score is calculated by ${details.version} from the verified eligible-player pool. ${positive.length?`Its strongest measured drivers are ${positive.join("; ")}.`:"No positive factor explanation is available."}${limits.length?` The main limiting factors are ${limits.join("; ")}.`:""}`;items=[{label:"Gem Score",value:`${context.gemScore}/100`},...details.categories.map(c=>({label:c.label,value:c.score===null?"N/A":`${Math.round(c.score)}/100`,note:c.activeWeight===null?"Inactive (source unavailable)":`${c.activeWeight.toFixed(0)}% active weight`}))]};break;

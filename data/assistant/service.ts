@@ -6,7 +6,7 @@ import { getAssistantProvider, type AssistantProvider } from "./provider";
 import type { AssistantAnswer, AssistantPlayerContext, AssistantRequest } from "./types";
 import { logServerError } from "../server-log";
 
-const NEVER_LLM=new Set(["game-history","unsupported-statcast","gem-score","career-history","season-comparison","historical-similarity","milb-development","age-level"]);
+const NEVER_LLM=new Set(["career-stat","game-history","unsupported-statcast","gem-score","career-history","season-comparison","historical-similarity","milb-development","age-level"]);
 export async function answerAssistantRequest(request:AssistantRequest,dependencies?:{context?:AssistantPlayerContext|null;provider?:AssistantProvider}):Promise<AssistantAnswer>{
   const intent=routeAssistantIntent(request.question,request.history);
   const context=dependencies&&"context"in dependencies?dependencies.context:await buildAssistantContext(request.playerId,request.playerKind,{includeGameHistory:intent==="game-history"});if(!context)throw new Error("Player context was not found.");

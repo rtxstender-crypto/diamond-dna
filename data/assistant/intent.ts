@@ -16,8 +16,13 @@ const rules: IntentRule[] = [
   { intent:"overview",minimum:1,concepts:[/\b(summarize|overview|tell me about|who is)\b/i] },
 ];
 
+const careerMarker=/\b(career(?:\s+wise)?|all[\s-]?time)\b/i;
+const careerStat=/\b(HR|home\s*runs?|homers?|H|hits?|RBI|runs?\s+batted\s+in|SB|stolen\s+bases?|BB|walks?|AVG|batting\s+average|OBP|on[\s-]?base\s+percentage|SLG|slugging(?:\s+percentage)?|OPS|games?(?:\s+played)?|PA|plate\s+appearances?|AB|at[\s-]?bats?|runs?|doubles?|triples?|hit\s+by\s+pitches?|sacrifice\s+flies|IP|innings?(?:\s+pitched)?|K|strikeouts?|wins?|losses?|earned\s+runs?|ERA|earned\s+run\s+average|WHIP|saves?|hits?\s+allowed|home\s*runs?\s+allowed)\b/i;
+const nonTotalCareer=/\b(career\s+high|best\s+season|single[\s-]?game|in\s+(?:one|a)\s+game)\b/i;
+
 export function routeAssistantIntent(question:string,history:AssistantHistoryItem[]=[]):AssistantIntent{
   const normalized=question.trim();
+  if(careerMarker.test(normalized)&&careerStat.test(normalized)&&!nonTotalCareer.test(normalized))return"career-stat";
   for(const rule of rules){if(rule.concepts.filter(pattern=>pattern.test(normalized)).length>=rule.minimum)return rule.intent;}
   const followUp=/^(how|why|what|and|was|is|did)\b/i.test(normalized)&&normalized.split(/\s+/).length<16;
   if(followUp){const prior=[...history].reverse().find(item=>item.role==="assistant"&&item.intent)?.intent;if(prior)return prior;}

@@ -11,6 +11,8 @@ export interface PlayerSeason {
   avg:number|null; obp:number|null; slg:number|null; ops:number|null; opsPlus:number|null; homeRuns:number|null; rbi:number|null;
   stolenBases:number|null; walks:number|null; walkRate:number|null; strikeoutRate:number|null; era:number|null; eraPlus:number|null; fip:number|null;
   whip:number|null; strikeouts:number|null; saves:number|null; war:number|null; defensiveValue:number|null;
+  atBats?:number|null; hits?:number|null; runs?:number|null; doubles?:number|null; triples?:number|null; hitByPitch?:number|null; sacrificeFlies?:number|null;
+  wins?:number|null; losses?:number|null; earnedRuns?:number|null; hitsAllowed?:number|null; homeRunsAllowed?:number|null;
   provenance:StatProvenance;
 }
 export interface CareerSeries { playerId:string; name:string; color:string; metricLabel:"OPS"|"ERA"; lowerIsBetter:boolean; series:{age:number;season:number;value:number}[] }
