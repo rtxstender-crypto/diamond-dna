@@ -28,7 +28,7 @@ Suggested prompts are shown only when the profile has the corresponding data. Fo
 
 ## Unsupported questions and hallucination controls
 
-Game dates, best games, cycles, streaks, perfect-game events, box scores, play-by-play, Statcast, pitch-level data, awards, transactions, salary, and unsupported advanced defense are never guessed. Game-level and Statcast intents stop before any model call. Null remains `N/A`, never zero. Retrieved baseball data and user text are serialized as untrusted data and cannot override the provider's grounding instruction.
+Game-level questions use official MLB Stats API `gameLog` splits and stop before any model call. Cycles require a verified single, double, triple, and home run in the same game. Complete games and shutouts require their official game-log fields. No-hitters, perfect games, grand slams, streaks, play-by-play, Statcast, pitch-level data, awards, transactions, salary, and unsupported advanced defense are never guessed. Null remains `N/A`, never zero. Retrieved baseball data and user text are serialized as untrusted data and cannot override the provider's grounding instruction.
 
 ## Provider configuration and security
 
@@ -45,4 +45,8 @@ DIAMONDDNA_ASSISTANT_MODEL=your_responses_api_model
 
 Deterministic intents do not call an LLM. A provider call occurs only for supported narrative/unknown routing when both server variables are configured. Context is deliberately narrow, output is capped at 300 tokens, history is capped at eight messages, questions at 500 characters, bodies at 20 KB, and requests at 20 per minute per client. The V1 limiter is process-local; production multi-instance deployment should replace it with a shared Redis/KV limiter.
 
-The current profile context does not cache Career Trajectory search results, so the assistant links users to that workflow rather than fabricating matches. V2 game-specific answers require a verified game-log/box-score/play-by-play provider, normalized game-event models, freshness/provenance rules, and new deterministic tools. The drawer and intent interfaces can accept those tools without redesigning the chat UI.
+The current profile context does not cache Career Trajectory search results, so the assistant links users to that workflow rather than fabricating matches. Game history is fetched only for a milestone panel request or game-level assistant intent and cached by official player ID plus season. Current seasons revalidate after 2 hours; completed seasons after 30 days.
+
+## Game-performance formula
+
+The label “best game” is explicitly DiamondDNA-specific. Hitter score: `hits×2 + HR×4 + RBI×1.5 + total bases×0.5 + walks×0.5 + stolen bases×1`. Pitcher score: `innings outs×0.5 + strikeouts×1.5 − earned runs×3 − hits×0.5 − walks×0.5`. Missing components contribute zero only after at least one supported scoring component is present; a game with no supported inputs is not scored. Ties resolve to the earliest game date for stable output.

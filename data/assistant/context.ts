@@ -2,16 +2,18 @@ import "server-only";
 import { getPlayerProfile } from "../player-index-service";
 import { fetchProspectDataset } from "../providers/mlb-milb-provider";
 import type { AssistantPlayerContext, AssistantSeason } from "./types";
+import { mlbGameLogProvider } from "../providers/mlb-game-log-provider";
 
-export async function buildAssistantContext(playerId:number,kind:"mlb"|"milb"):Promise<AssistantPlayerContext|null>{
-  return kind==="mlb"?buildMlbContext(playerId):buildMilbContext(playerId);
+export async function buildAssistantContext(playerId:number,kind:"mlb"|"milb",options:{includeGameHistory?:boolean}={}):Promise<AssistantPlayerContext|null>{
+  return kind==="mlb"?buildMlbContext(playerId,options.includeGameHistory??false):buildMilbContext(playerId);
 }
-async function buildMlbContext(playerId:number):Promise<AssistantPlayerContext|null>{
+async function buildMlbContext(playerId:number,includeGameHistory:boolean):Promise<AssistantPlayerContext|null>{
   const profile=await getPlayerProfile(playerId);if(!profile)return null;const{identity,current,career}=profile,stats=current?.currentSeason??null;
   const currentSeason:AssistantSeason|null=stats?{season:stats.context.season??new Date().getFullYear(),team:identity.team,level:"MLB",age:identity.age,games:stats.games,starts:stats.kind==="pitching"?stats.gamesStarted:null,plateAppearances:stats.kind==="batting"?stats.plateAppearances:null,inningsPitched:stats.kind==="pitching"?stats.inningsPitched:null,avg:stats.kind==="batting"?stats.battingAverage:null,obp:stats.kind==="batting"?stats.onBasePercentage:null,slg:stats.kind==="batting"?stats.sluggingPercentage:null,ops:stats.kind==="batting"?stats.ops:null,era:stats.kind==="pitching"?stats.era:null,whip:stats.kind==="pitching"?stats.whip:null,homeRuns:stats.kind==="batting"?stats.homeRuns:null,rbi:stats.kind==="batting"?stats.rbi:null,stolenBases:stats.kind==="batting"?stats.stolenBases:null,walks:stats.walks,strikeouts:stats.strikeouts,saves:stats.kind==="pitching"?stats.saves:null,walkRate:stats.walkRate,strikeoutRate:stats.strikeoutRate}:null;
   const seasons:AssistantSeason[]=career.map(s=>({season:s.season,team:s.team,level:"MLB",age:s.age,games:s.games,starts:s.starts,plateAppearances:s.plateAppearances,inningsPitched:s.inningsPitched,avg:s.avg,obp:s.obp,slg:s.slg,ops:s.ops,era:s.era,whip:s.whip,homeRuns:s.homeRuns,rbi:s.rbi,stolenBases:s.stolenBases,walks:s.walks,strikeouts:s.strikeouts,saves:s.saves,walkRate:s.walkRate,strikeoutRate:s.strikeoutRate}));
   const provenance=current?.provenance??{provider:"mlb-stats-api" as const,quality:"live" as const,retrievedAt:null,notes:"Identity and career history from MLB Stats API; current statistics unavailable."};
-  return{identity:{officialId:identity.mlbId,name:identity.name,team:identity.team,position:identity.position,age:identity.age,bats:identity.bats,throws:identity.throws,role:identity.role,kind:"mlb",level:"MLB"},currentSeason,seasons,gemScore:current?.gemScore??null,gemScoreDetails:current?.gemScoreDetails??null,similarities:[],provenance,freshness:provenance.retrievedAt};
+  const gameHistory=includeGameHistory?await mlbGameLogProvider.getCareer(playerId,identity.role,career.map(s=>s.season)):undefined;
+  return{identity:{officialId:identity.mlbId,name:identity.name,team:identity.team,position:identity.position,age:identity.age,bats:identity.bats,throws:identity.throws,role:identity.role,kind:"mlb",level:"MLB"},currentSeason,seasons,gemScore:current?.gemScore??null,gemScoreDetails:current?.gemScoreDetails??null,similarities:[],provenance,freshness:provenance.retrievedAt,gameHistory};
 }
 
 async function buildMilbContext(playerId:number):Promise<AssistantPlayerContext|null>{

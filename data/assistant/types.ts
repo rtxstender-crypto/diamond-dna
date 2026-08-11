@@ -1,4 +1,5 @@
 import type { DataProvenance, GemScoreDetails, PlayerRole } from "../models/player";
+import type { GameHistory } from "../game-history/types";
 
 export type AssistantPlayerKind = "mlb" | "milb";
 export type AssistantIntent =
@@ -12,7 +13,7 @@ export type AssistantIntent =
   | "historical-similarity"
   | "milb-development"
   | "age-level"
-  | "unsupported-game-level"
+  | "game-history"
   | "unsupported-statcast"
   | "unknown";
 
@@ -71,6 +72,7 @@ export interface AssistantPlayerContext {
   similarities: AssistantSimilarity[];
   provenance: DataProvenance | { provider: "mlb-stats-api"; quality: "live"; retrievedAt: string | null; notes?: string };
   freshness: string | null;
+  gameHistory?: GameHistory | null;
 }
 
 export interface AssistantEvidence { label: string; value: string; note?: string }

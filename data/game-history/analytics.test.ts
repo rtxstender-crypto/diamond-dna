@@ -1,0 +1,18 @@
+import { describe,expect,it } from "vitest";
+import { buildGameHistory, calculateBestGame, calculateCareerHighs, detectMilestones } from "./analytics";
+import type { HitterGameStats, PitcherGameStats, PlayerGameLog } from "./types";
+
+const provenance={provider:"mlb-stats-api" as const,quality:"live" as const,retrievedAt:"2026-08-11T12:00:00Z"};
+const hitter=(gameId:number,date:string,overrides:Partial<HitterGameStats>={}):PlayerGameLog=>({playerId:1,gameId,date,season:2026,opponent:"Test Club",opponentId:2,homeAway:"home",finalScore:null,role:"position-player",provenance,stats:{kind:"batting",atBats:5,plateAppearances:5,hits:0,singles:0,doubles:0,triples:0,homeRuns:0,rbi:0,runs:0,walks:0,strikeouts:0,stolenBases:0,grandSlams:null,...overrides}});
+const pitcher=(gameId:number,date:string,overrides:Partial<PitcherGameStats>={}):PlayerGameLog=>({playerId:1,gameId,date,season:2026,opponent:"Test Club",opponentId:2,homeAway:"away",finalScore:null,role:"pitcher",provenance,stats:{kind:"pitching",inningsPitched:6,hitsAllowed:4,runsAllowed:1,earnedRuns:1,walks:1,strikeouts:6,homeRunsAllowed:0,pitches:90,wins:1,losses:0,saves:0,gamesStarted:1,completeGames:0,shutouts:0,officialNoHitter:null,officialPerfectGame:null,...overrides}});
+
+describe("game milestone analytics",()=>{
+  it("detects a cycle only with all four hit types",()=>{expect(detectMilestones([hitter(1,"2026-04-01",{hits:4,singles:1,doubles:1,triples:1,homeRuns:1})]).some(x=>x.type==="cycle")).toBe(true);expect(detectMilestones([hitter(2,"2026-04-02",{hits:4,singles:2,doubles:1,triples:0,homeRuns:1})]).some(x=>x.type==="cycle")).toBe(false)});
+  it("detects multi-HR thresholds",()=>{const events=detectMilestones([hitter(1,"2026-04-01",{hits:3,singles:1,homeRuns:2}),hitter(2,"2026-04-02",{hits:4,singles:1,homeRuns:3})]).filter(x=>x.type==="multi-hr");expect(events.map(x=>x.value)).toEqual([2,3])});
+  it("calculates RBI, hits, and tied career highs",()=>{const highs=calculateCareerHighs([hitter(1,"2026-04-01",{rbi:7,hits:4}),hitter(2,"2026-04-02",{rbi:2,hits:5}),hitter(3,"2026-04-03",{rbi:7,hits:5})]);expect(highs.find(x=>x.metric==="rbi")).toMatchObject({value:7,occurrences:[{gameId:1},{gameId:3}]});expect(highs.find(x=>x.metric==="hits")).toMatchObject({value:5,occurrences:[{gameId:2},{gameId:3}]})});
+  it("calculates career-high strikeouts",()=>{expect(calculateCareerHighs([pitcher(1,"2026-04-01",{strikeouts:11}),pitcher(2,"2026-04-02",{strikeouts:14})]).find(x=>x.metric==="strikeouts")).toMatchObject({value:14,occurrences:[{gameId:2}]})});
+  it("detects complete games and official shutouts",()=>{const types=detectMilestones([pitcher(1,"2026-04-01",{inningsPitched:9,completeGames:1,shutouts:1,earnedRuns:0})]).map(x=>x.type);expect(types).toContain("complete-game");expect(types).toContain("shutout")});
+  it("does not infer no-hitters or perfect games from a zero-hit line",()=>{const types=detectMilestones([pitcher(1,"2026-04-01",{inningsPitched:9,hitsAllowed:0,runsAllowed:0,earnedRuns:0,completeGames:1,shutouts:1})]).map(x=>x.type);expect(types).not.toContain("no-hitter");expect(types).not.toContain("perfect-game")});
+  it("uses the documented deterministic best-game score",()=>{const best=calculateBestGame([hitter(1,"2026-04-01",{hits:2,singles:2,rbi:1}),hitter(2,"2026-04-02",{hits:4,singles:1,doubles:1,homeRuns:2,rbi:6})]);expect(best?.game.gameId).toBe(2);expect(best?.formula).toContain("hits×2")});
+  it("handles missing game history without inventing output",()=>{const history=buildGameHistory(1,[],[],null);expect(history.games).toEqual([]);expect(history.milestones).toEqual([]);expect(history.bestGame).toBeNull()});
+});

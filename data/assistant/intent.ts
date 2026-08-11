@@ -2,7 +2,7 @@ import type { AssistantHistoryItem, AssistantIntent } from "./types";
 
 type IntentRule = { intent: AssistantIntent; concepts: RegExp[]; minimum: number };
 const rules: IntentRule[] = [
-  { intent:"unsupported-game-level",minimum:1,concepts:[/\b(game|box score|cycle|perfect game|hitting streak|game log|single game|what date)\b/i] },
+  { intent:"game-history",minimum:1,concepts:[/\b(game|box score|cycle|perfect game|no.?hitter|shutout|complete game|milestone|single.game|career high|best offensive|biggest rbi|\d+.homer|home runs? in one game|strikeouts? in one game|scoreless outing|what date)\b/i] },
   { intent:"unsupported-statcast",minimum:1,concepts:[/\b(statcast|exit velocity|launch angle|barrel|spin rate|pitch velocity|hard.hit|sprint speed)\b/i] },
   { intent:"gem-score",minimum:1,concepts:[/\bgem score\b/i,/\bperformance score\b/i,/\bage.?upside\b/i] },
   { intent:"historical-similarity",minimum:1,concepts:[/\b(similar|comparison|compare|historical match|trajectory)\b/i] },
