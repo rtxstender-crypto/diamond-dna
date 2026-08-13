@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/data/articles/supabase";
+import { getContributor } from "@/data/articles/auth";
+
+export async function POST(request:Request){const client=await createSupabaseServerClient();if(!client)return NextResponse.json({error:"Publishing is not configured."},{status:503});const value=await request.json().catch(()=>null) as {email?:unknown;password?:unknown}|null;if(typeof value?.email!=="string"||typeof value.password!=="string"||value.password.length>256)return NextResponse.json({error:"Enter a valid email and password."},{status:400});const{error}=await client.auth.signInWithPassword({email:value.email.slice(0,320),password:value.password});if(error)return NextResponse.json({error:"Sign-in failed."},{status:401});const identity=await getContributor();if(!identity){await client.auth.signOut();return NextResponse.json({error:"This account is not an approved contributor."},{status:403})}return NextResponse.json({identity},{headers:{"cache-control":"no-store"}})}
+export async function DELETE(){const client=await createSupabaseServerClient();if(client)await client.auth.signOut();return NextResponse.json({ok:true},{headers:{"cache-control":"no-store"}})}

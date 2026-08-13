@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { getContributor } from "@/data/articles/auth";
+import { createSupabaseServerClient } from "@/data/articles/supabase";
+import { ArticleValidationError,validateImage } from "@/data/articles/validation";
+
+export async function POST(request:Request){try{const identity=await getContributor();if(!identity)return NextResponse.json({error:"Unauthorized."},{status:401});const form=await request.formData(),file=form.get("image");if(!(file instanceof File))throw new ArticleValidationError("Choose an image.");validateImage(file);const client=await createSupabaseServerClient();if(!client)return NextResponse.json({error:"Publishing is not configured."},{status:503});const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"}[file.type]!,path=`${identity.id}/${crypto.randomUUID()}.${ext}`,{error}=await client.storage.from("article-images").upload(path,file,{contentType:file.type,upsert:false,cacheControl:"31536000"});if(error)return NextResponse.json({error:"Image upload failed."},{status:502});const{data}=client.storage.from("article-images").getPublicUrl(path);return NextResponse.json({url:data.publicUrl})}catch(error){return NextResponse.json({error:error instanceof ArticleValidationError?error.message:"Invalid image."},{status:error instanceof ArticleValidationError?error.status:400})}}

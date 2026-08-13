@@ -1,0 +1,4 @@
+import { describe,expect,it } from "vitest";
+import { parseArticleInput,slugify,validateImage } from "./validation";
+const valid={title:"A title",excerpt:"An excerpt",content:"Body",category:"Analysis",tags:[],status:"draft"};
+describe("article validation",()=>{it("creates safe slugs",()=>expect(slugify(" Elly's Future! ")).toBe("elly-s-future"));it("strips executable markup",()=>expect(parseArticleInput({...valid,content:"Safe<script>alert(1)</script> text"}).content).toBe("Safe text"));it("rejects invalid categories",()=>expect(()=>parseArticleInput({...valid,category:"News"})).toThrow("valid category"));it("limits uploads",()=>expect(()=>validateImage(new File([new Uint8Array(5*1024*1024+1)],"x.png",{type:"image/png"}))).toThrow("5 MB"));it("rejects executable uploads",()=>expect(()=>validateImage(new File(["x"],"x.svg",{type:"image/svg+xml"}))).toThrow("JPEG"))});

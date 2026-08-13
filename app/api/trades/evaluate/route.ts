@@ -1,0 +1,7 @@
+import { NextRequest,NextResponse } from "next/server";
+import { consumeRateLimit } from "@/data/assistant/rate-limit";
+import { evaluateTrade } from "@/data/trade-value/evaluate";
+import type { TradeSideInput } from "@/data/trade-value/types";
+import { TradeValidationError,validateTrade } from "@/data/trade-value/validation";
+const MAX_BODY=40_000;
+export async function POST(request:NextRequest){const length=Number(request.headers.get("content-length")??0);if(length>MAX_BODY)return NextResponse.json({error:"Trade request is too large."},{status:413});const key=`trade:${request.headers.get("x-forwarded-for")?.split(",")[0]??"local"}`,limit=consumeRateLimit(key,Date.now(),{requests:30,windowMs:60_000});if(!limit.allowed)return NextResponse.json({error:"Trade evaluation rate limit reached."},{status:429});try{const text=await request.text();if(text.length>MAX_BODY)throw new TradeValidationError("Trade request is too large.",413);const body=JSON.parse(text)as{teamA?:TradeSideInput;teamB?:TradeSideInput};if(!body.teamA||!body.teamB)throw new TradeValidationError("Malformed trade request.");validateTrade(body.teamA,body.teamB);return NextResponse.json(evaluateTrade(body.teamA,body.teamB),{headers:{"cache-control":"no-store"}})}catch(error){if(error instanceof TradeValidationError)return NextResponse.json({error:error.message},{status:error.status});return NextResponse.json({error:"Malformed trade request."},{status:400})}}
