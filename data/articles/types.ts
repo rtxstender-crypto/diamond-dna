@@ -8,4 +8,9 @@ export interface Article {
   category:ArticleCategory; tags:string[]; relatedPlayerId:number|null; relatedTeamId:number|null; seoTitle:string|null; seoDescription:string|null;
 }
 export interface ArticleDraftInput extends Pick<Article,"title"|"excerpt"|"content"|"imageAlt"|"category"|"tags"|"relatedPlayerId"|"relatedTeamId"|"seoTitle"|"seoDescription"> { id?:string; slug?:string; coverImageUrl?:string|null; status:ArticleStatus }
-export interface ContributorIdentity { id:string; email:string; displayName:string; role:ContributorRole }
+export interface ContributorIdentity { id:string; displayName:string; role:ContributorRole }
+export type ContributorAccess =
+  | { state:"signed-out"; identity:null; reason:"missing"|"expired" }
+  | { state:"unauthorized"; identity:null }
+  | { state:"profile-error"; identity:null }
+  | { state:"authorized"; identity:ContributorIdentity };
